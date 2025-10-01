@@ -1,57 +1,19 @@
-/* CÓDIGO TOP - ANTONIO DONA CANDELA - 16OCT24 */
+/* CÓDIGO TOP - ANTONIO DONA CANDELA - 1OCT25 */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
 #ifdef _RTE_
 #include "RTE_Components.h"             // Component selection
 #endif
-#ifdef RTE_CMSIS_RTOS2                  // when RTE component CMSIS RTOS2 is used
-#include "cmsis_os2.h"                  // ::CMSIS:RTOS2
-#endif
-
-#ifdef RTE_CMSIS_RTOS2_RTX5
-/**
-  * Override default HAL_GetTick function
-  */
-uint32_t HAL_GetTick (void) {
-  static uint32_t ticks = 0U;
-         uint32_t i;
-
-  if (osKernelGetState () == osKernelRunning) {
-    return ((uint32_t)osKernelGetTickCount ());
-  }
-
-  /* If Kernel is not running wait approximately 1 ms then increment 
-     and return auxiliary tick counter value */
-  for (i = (SystemCoreClock >> 14U); i > 0U; i--) {
-    __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP();
-    __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP();
-  }
-  return ++ticks;
-}
-
-/**
-  * Override default HAL_InitTick function
-  */
-HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority) {
-  
-  UNUSED(TickPriority);
-
-  return HAL_OK;
-}
-#endif
-
 
 /* Public variables ---------------------------------------------------------*/
 //han de ser accedidos por stm32f4xx_it
 //(son modificados por interrupciones/callbacks)
 uint16_t periodo_tim2;
+/*CUANTOS TIMERS HW NECESITO*/
 TIM_HandleTypeDef htim2, htim3, htim7;
-TIM_OC_InitTypeDef TIM_Channel_InitStruct;
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
+TIM_OC_InitTypeDef TIM_Channel_InitStruct;
 
 /* Private variables ---------------------------------------------------------*/
 static GPIO_InitTypeDef GPIO_InitStruct;
@@ -69,14 +31,11 @@ static void TIM2_OC_Init(void);
 static void TIM3_IC_Init(void);
 static void TIM7_Init(void);
 
-
-/* Private functions ---------------------------------------------------------*/
 /**
   * @brief  Main program
   * @param  None
   * @retval None
   */
-
 int main(void)
 {
   /* STM32F4xx HAL library initialization:  */
@@ -87,7 +46,6 @@ int main(void)
   SystemCoreClockUpdate();
 
   /* Add your application code here */
-  
   //ADD ALL YOUR HW INIT FUNCTION CALLS HERE
   ST_LED_Init();
   ST_PC13_UserButton_Init();
@@ -98,17 +56,6 @@ int main(void)
   TIM3_IC_Init();
   TIM7_Init();
   
-#ifdef RTE_CMSIS_RTOS2
-  /* Initialize CMSIS-RTOS2 */
-  osKernelInitialize ();
-
-  /* Create thread functions that start executing, 
-  Example: osThreadNew(app_main, NULL, NULL); */
-
-  /* Start thread execution */
-  osKernelStart();
-#endif
-
   /* Infinite loop */
   while (1)
   {
@@ -186,11 +133,6 @@ static void SystemClock_Config(void)
   }
 }
 
-/**
-  * @brief  This function is executed in case of error occurrence.
-  * @param  None
-  * @retval None
-  */
 static void Error_Handler(void)
 {
   /* User may add here some code to deal with this error */
@@ -200,14 +142,6 @@ static void Error_Handler(void)
 }
 
 #ifdef  USE_FULL_ASSERT
-
-/**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
 void assert_failed(uint8_t* file, uint32_t line)
 { 
   /* User can add his own implementation to report the file name and line number,
@@ -263,7 +197,12 @@ static void ST_PC13_UserButton_Init(void){
   //CLK_ENABLE and Pin-Port Assign
   __HAL_RCC_GPIOC_CLK_ENABLE();
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+
+
 }
+/** ESTA FUNCION ESTABLECE PB11 COMO SALIDA DEL TIMER// SE OPONE A JOYSTICK -> PB11 INPUT */
+
 
 /**
   * @brief  Configures and Starts PB11 pin as TIM2 output as AF1.
@@ -303,20 +242,14 @@ static void mbed_Joystick_Init(void)
 
   /*HAL Clock Channelling / Enable*/
   __HAL_RCC_GPIOB_CLK_ENABLE(); 	//INICIALIZADO DE RELOJ EN PUERTO B
-  /*GPIO HW Config*/
+  __HAL_RCC_GPIOE_CLK_ENABLE(); 	//INICIALIZADO DE RELOJ EN PUERTO E
+
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  /*PB11 currently in use as Output. */
+  
   GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_11;
-  /*GPIO HW Init*/
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*HAL Clock Channelling / Enable*/
-  __HAL_RCC_GPIOE_CLK_ENABLE(); 	//INICIALIZADO DE RELOJ EN PUERTO E
-  /*GPIO HW Config*/
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pin = GPIO_PIN_12 | GPIO_PIN_14 | GPIO_PIN_15;
-  
-  /*GPIO HW Init*/
+  GPIO_InitStruct.Pin = GPIO_PIN_12 | GPIO_PIN_14 | GPIO_PIN_15;  
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
 }
@@ -342,15 +275,14 @@ static void TIM7_Init(void){
 /* For SystemCoreClock = 168MHz, APB1_APB2_TIM_CLK=84MHz */
   htim7.Instance       = TIM7;
   
-  //Up to 65535 factor, divide to 41999 (count 0 to 41999 for EOC)
-  htim7.Init.Prescaler = 41999;     //84MHz/42k = 2kHz
-
+  //Prescaler Freq Divider: Up to 65535 factor
+  //divide to 41999 (count 0 to 41999 for EOC)
+  //MÓDULO CONTADOR Final de Cuenta - End of Count
   //Generate EOC pulse interrupt at 3000th count
-  htim7.Init.Period    = 2999;      //[2999 to 0] == 3000/2000/s = 1.5s
-  
-  //Load to handler pointer
-  HAL_TIM_Base_Init(&htim7);        //TIM Config
-  
+  htim7.Init.Prescaler = 41999;     //84MHz/42k = 2kHz = 2000/sec
+  htim7.Init.Period    = 2999;      //[0-2999] == 3000/2000/sec = 1.5sec
+  HAL_TIM_Base_Init(&htim7);        //TIM Config Pointer Load
+
   //Start (can be placed whenever is required to start
   HAL_TIM_Base_Start_IT(&htim7);    //TIM1 Init
 }

@@ -4,27 +4,6 @@
 #include "RTE_Components.h"             // Component selection
 #endif
 
-#ifdef RTE_CMSIS_RTOS2                  // when RTE component CMSIS RTOS2 is used
-#include "cmsis_os2.h"                  // ::CMSIS:RTOS2
-#endif
-
-#ifdef RTE_CMSIS_RTOS2_RTX5
-uint32_t HAL_GetTick (void) {
-  static uint32_t ticks = 0U;
-         uint32_t i;
-  if (osKernelGetState () == osKernelRunning) {
-    return ((uint32_t)osKernelGetTickCount ());
-  }
-  /* If Kernel is not running wait approximately 1 ms then increment 
-     and return auxiliary tick counter value */
-  for (i = (SystemCoreClock >> 14U); i > 0U; i--) {
-    __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP();
-    __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP();
-  }
-  return ++ticks;
-}
-#endif
-
 static void SystemClock_Config(void);
 static void Error_Handler(void);
 
@@ -64,20 +43,6 @@ int main(void){
     InitPIN_OUTPUT();
     iniciar_pines();
     HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
-
-
-
-#ifdef RTE_CMSIS_RTOS2
-  osKernelInitialize ();
-
-  /* Init Threads */
-  
-  
-  
-  /* Init Threads */
-
-  osKernelStart();
-#endif
 
   while(1){
   }

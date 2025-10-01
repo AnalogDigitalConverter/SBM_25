@@ -122,7 +122,7 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin){
     /*Timer Stop for Config/Parameter Update*/
     HAL_TIM_OC_Stop(&htim2, TIM_CHANNEL_4);	
     
-    //Period update from 2kHz to 5kHz -> half duty cycle
+    //Period update from 2kHz to 5kHz -> /2.5 duty cycle
     htim2.Init.Period    = (htim2.Init.Period == 41999) ? 16799 : 41999;
 
     /*Timer Register Config*/
@@ -174,6 +174,20 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin){
   }
 }
 /************************ ADC *****END OF FILE********************************/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*
 *
 *
