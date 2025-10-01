@@ -1,0 +1,152 @@
+Capa HAL; No LowLevel
+
+SBM
+RESET y RCC
+	RESET:
+		- Pin NRST (status)
+		- Rutina fija en dirección 0x00000004
+		- Contiene WatchDog ante condición. Si no se produce en ventana programada (es un contador a ser reseteado) resetea el sistema de manera autónoma.
+				REQUIERE DE RELOJ ACTIVO. Puede existir varios WatchDog con fuentes de reloj independientes.
+		- Invocación por SW
+		- Protección de alimentación LowPower: Reseteo a standby/stop mode. Protección contra fallos por valores lógicos indeterminados.
+		(Cortocircuito no controlado de transistores de puertas lógicas).
+		- Forzado por Botón B2
+		- El reset se ejecuta a nivel bajo, desde la pulsación del botón y se completa por especificación 1uS después de nivel alto (liberado).
+		
+	RESET HANDLER
+		
+		• During the execution of the reset handler
+			– The processor is using de internal clock (16MHz)
+			– The different PINs are in the default state
+		
+		• The user/developer has to configure the processor and the peripherals. This should be done in the main function
+			– the first function to call in the main is “HAL_Init()” to gain access to the HAL Library.
+			
+Default BOOT0 = 0; Pin a masa= Boot Mode Flash memory.
+
+Frecuencia dinámica: RCC: Clock Control = Presenta 3 fuentes de reloj HSInternal (16MHz); HSExternal (8MHz); PhaseLockedLoop (PLL).
+		-Tras Reset: Fuente HSI.
+		Se activa también HSE.
+		/M (divisor ~ pre-scaler)
+El PLL requiere una señal en frecuencia para operar: Fuentes HSI/HSE desde Mux. 
+		Parámetros /M; /P; /Q; /R para operar en distintos protocolos a partir de las señales de reloj HSI/HSE
+		
+Frecuencia de operación: HSI(16MHz); HSE(8MHz) ó PLLCLK -> AHB Prescaler -> HCLK ->(prescaler para cada bus/protocolo).
+
+
+-----------------
+ESQUEMA: 
+
+
+HAL_Init();
+SystemClock_Config();
+SystemCoreClockUpdate();
+
+
+Inicialización de reloj
+Inicialización de oscilador (fuente de reloj);
+
+Habilitación de alimentación de reloj : _HAL_RCC_PWR_CLK_ENABLE();
+
+Selección de fuente de reloj;
+Selección de estado de reloj;
+Selección de estado de PLL;
+Selección de fuente de PLL;
+Factores pre-scaler PLL;
+
+/*PARA SystemCoreClock DE 168MHz*/
+static void SystemClock_Config(void)
+	{
+		RCC_ClkInitTypeDef RCC_ClkInitStruct;
+		RCC_OscInitTypeDef RCC_OscInitStruct;
+		/* Enable Power Control clock */
+		__HAL_RCC_PWR_CLK_ENABLE();
+		…………..
+		/* Enable HSE Oscillator and activate PLL with HSE as source
+		*/
+		RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+		RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+		RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+		RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+		RCC_OscInitStruct.PLL.PLLM = 4;
+		RCC_OscInitStruct.PLL.PLLN = 168;
+		RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+		RCC_OscInitStruct.PLL.PLLQ = 7;
+
+
+
+DIAGRAMA DATASHEET Pag.27 "B1-STM32-RCC.pdf"
+ 
+ 
+ IMPORTANTE:
+ HSE_VALUE=8000000 // #define HSE_VALUE 8000000
+ 
+-----
+GPIO
+	- Pines multipropósito (optimización de espacio/pcb).
+		Digital I/O; Función/Pin específico a HW alternativo; Analog (ADC/DAC); OpenDrain, PullUp (VDD), PullDown(VSS); High-speed; low-speed.
+	- 	OpenDrain = Alta Impedancia : Anula PMOS
+	- PullUp (Puesta a nivel alto). 
+	
+	OUTPUT_PP = PUSH PULL: PMOS Y NMOS HABILITADOS
+	
+	GPIOF; (PUERTO F DE GPIO) = PF0~PF12
+	GPIOC; (PUERTO C DE GPIO)
+	
+	Port A -> PA0~PA12 -> Función alternativa de tabla de puertos AF1 (Timer 2 canal 1 ó Timer 2 timer eventos) -> ETIQUETA INITSTRUCT.Alternate = tag a buscar en .h
+	
+	LOCALIZAR HOJAS DE PUERTOS.
+	LOCALIZAR FUNCIONES ALTERNATIVAS.
+	
+----
+INTERRUPCIONES:
+	startup_stm32f429xx.s //TAGS A INTERRUPCIONES
+	stm32f429xx.h	//TIPOS DE INTERRUPCIONES
+
+Podemos anidar interrupciones gracias a NVIC (las configurables).
+	-IRQ (Prior. Configurable): SysTick Timer, Periféricos, EXTI Controller (Señales externas que generan interrupciones)
+	-NMI: Reset(-3); NMI(-2); HardFault(-1)
+
+MODOS THREAD E INTERRUPT DE FUNCIONAMIENTO != HILOS DE EJECUCIÓN
+
+/*****************************************************************************/
+Timer como contador de clicks de reloj.
+- Programación de eventos (Scheduling)
+- Medidas de señales externas
+- Generación de señales
+
+Los timers son contadores al margen del procesador. Es HW distinto fuera del procesador. (Contadores dedicados). Por tanto el timer es provisto por HW, no SW; el SW permite controlar los parámetros de configuración.
+
+El contador cuenta clicks, pero solo interviente al hacer overflow (el overflow genera la interrupción). Es poco versátil para múltiples timers de distinta magnitud. Se Integra un prescaler para adaptar la frecuencia y un autoload register con el valor deseado para que fuerce la interrupción al comparar el estado de cuenta de clicks con el valor cargado. Obviamente el número a contar en el prescaler ha de ser menor (o igual) al máximo valor del contador (por ej 255-8bit).
+
+El valor de registro de autorecarga es: [Tiempo deseado / Período Tick (1/Freq.Sys)] == No.CLICKS < Módulo max contador.
+
+A nivel HW, los timers integran a su vez múltiple entrada/selección de fuente de reloj (incluida señal externa), Registros de captura de entradas (medidas de eventos/frecuencias/tiempos externos) y registros comparadores de salida (Generan PWM, Pulsos, señales...)
+
+El contador de timer trabaja continuamente. Se opera generalmente con circuitos en paralelo que comparan valores deseados con las cuenta actual (real time): Registro de Autorecarga, Registros de captura de entradas...
+
+Al ser HW dedicado externo a CPU, los timers están conectados a través de los BUSES APB1\APB2: 		STM32F429-DATASHEET		Page 20/239
+
+Timers on STM32F4
+On board there are following timers available:
+➢ 2x advanced 16bit timers (TIM1,8)
+➢ 2x general purpose 32bit timers (TIM2, 5)
+➢ 8x general purpose 16bit timers (TIM3,4,9,10..14)
+➢ 2x simple (basic) 16bit timers for DAC (TIM6,7)
+➢ 1x 24bit system timer (SysTick)
+
+Existen Timers Básicos (Reference only, no Input/Output); Basic timers (TIM6 and TIM7)
+
+General Purpose Timers (Input Output básicos "monopulso", flancos, interrupciones, encoders, hall sensor; Single ó Dual Channel, PWM, ...) General-purpose timers (TIM2 to TIM5)
+y Avanzados (Step Motor, Digital power Converter, deadtime, Emergency stop)
+
+Firmware TIMERS 68.
+HAL_TIM_PeriodElapsedCallback
+HAL_TIM_PeriodElapsedHalfCpltCallback
+HAL provides three ways to use timers: polling, INTERRUPT and DMA
+
+1)Habilitar reloj al TIMER (off by default, energy saving)
+2)Habilitar reloj al GPIO (Input/Output): La función de reloj no suele ser una función ppal del pin: Función ALTERNATIVA.
+3)Elección opcional de fuente de reloj. HAL_TIM_ConfigClockSource
+
+-------------

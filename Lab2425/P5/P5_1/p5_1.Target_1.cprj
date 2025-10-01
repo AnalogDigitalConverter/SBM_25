@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<cprj schemaVersion="0.0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CPRJ.xsd">
+
+  <created timestamp="2024-11-25T00:10:21" tool="uVision V5.34.0.0"/>
+
+  <info>
+    <name>p5_1</name>
+    <description/>
+  </info>
+
+  <packages>
+    <package name="CMSIS" vendor="ARM"/>
+    <package name="STM32F4xx_DFP" vendor="Keil"/>
+  </packages>
+
+  <compilers>
+    <compiler name="AC5" version="5.6.7:5.6.7"/>
+  </compilers>
+
+  <target Ddsp="NO_DSP" Dendian="Little-endian" Dfpu="SP_FPU" Dmve="NO_MVE" Dname="STM32F429ZITx" Dsecure="Non-secure" Dtz="NO_TZ" Dvendor="STMicroelectronics:13">
+    <output intdir="./Objects/" name="p5_1" outdir="./Objects/" type="exe"/>
+    <ldflags add="--callgraph --entry=Reset_Handler --info sizes --info summarysizes --info totals --info unused --info veneers --load_addr_map_info --map --strict --summary_stderr --symbols --xref" compiler="AC5" file="./p5_1.Target 1.sct"/>
+    <cflags add="--apcs=interwork --split_sections -DHSE_VALUE=&quot;8000000&quot; -O0 -g" compiler="AC5"/>
+    <asflags add="--apcs=interwork  --xref -g" compiler="AC5"/>
+  </target>
+
+  <components>
+    <component Cclass="CMSIS" Cgroup="CORE" Cvendor="ARM"/>
+    <component Cclass="CMSIS" Cgroup="RTOS2" Csub="Keil RTX5" Cvariant="Library" Cvendor="ARM">
+      <file attr="config" category="source" name="CMSIS/RTOS2/RTX/Config/RTX_Config.c" version="5.1.1"/>
+      <file attr="config" category="header" name="CMSIS/RTOS2/RTX/Config/RTX_Config.h" version="5.5.2"/>
+    </component>
+    <component Cclass="Device" Cgroup="STM32Cube Framework" Csub="Classic" Cvendor="Keil">
+      <file attr="config" category="header" name="CMSIS/Driver/Config/RTE_Device.h" version="2.4.5"/>
+      <file attr="config" category="header" name="MDK/Templates/Inc/stm32f4xx_hal_conf.h" version="1.7.9"/>
+    </component>
+    <component Cclass="Device" Cgroup="STM32Cube HAL" Csub="Common" Cvendor="Keil"/>
+    <component Cclass="Device" Cgroup="STM32Cube HAL" Csub="Cortex" Cvendor="Keil"/>
+    <component Cclass="Device" Cgroup="STM32Cube HAL" Csub="DMA" Cvendor="Keil"/>
+    <component Cclass="Device" Cgroup="STM32Cube HAL" Csub="EXTI" Cvendor="Keil"/>
+    <component Cclass="Device" Cgroup="STM32Cube HAL" Csub="GPIO" Cvendor="Keil"/>
+    <component Cclass="Device" Cgroup="STM32Cube HAL" Csub="PWR" Cvendor="Keil"/>
+    <component Cclass="Device" Cgroup="STM32Cube HAL" Csub="RCC" Cvendor="Keil"/>
+    <component Cclass="Device" Cgroup="STM32Cube HAL" Csub="SPI" Cvendor="Keil"/>
+    <component Cclass="Device" Cgroup="STM32Cube HAL" Csub="TIM" Cvendor="Keil"/>
+    <component Cclass="Device" Cgroup="Startup" Cvendor="Keil">
+      <file attr="config" category="source" name="Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/arm/startup_stm32f429xx.s" version="2.6.2"/>
+      <file attr="config" category="source" name="Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c" version="2.6.2"/>
+    </component>
+  </components>
+
+  <files>
+    <group name="Source Group 1">
+      <file category="sourceC" name="./main.c"/>
+      <file category="sourceC" name="./Thled1.c"/>
+    </group>
+  </files>
+
+</cprj>

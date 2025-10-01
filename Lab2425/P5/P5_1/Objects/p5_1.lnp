@@ -1,0 +1,5 @@
+--cpu=Cortex-M4.fp.sp
+--strict --scatter ".\p5_1.Target 1.sct"
+--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list ".\Listings\p5_1.map" -o .\Objects\p5_1.axf
